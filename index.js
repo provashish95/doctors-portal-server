@@ -61,11 +61,11 @@ async function run() {
             //for each service , find bookings for that service
             services.forEach(service => {
                 const serviceBookings = booking.filter(b => b.treatmentName === service.name)
-                const booked = serviceBookings.map(s => s.slot);
+                const booked = serviceBookings.map(book => book.slot);
                 //service.booked = serviceBookings.map(s => s.slot);
                 //service.booked = booked;
                 const availableSlots = service.slots.filter(s => !booked.includes(s));
-                service.availableSlots = availableSlots;
+                service.slots = availableSlots;
 
             })
             res.send(services);
