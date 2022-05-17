@@ -1,6 +1,7 @@
 const express = require('express')
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const app = express()
 require('dotenv').config()
 const port = process.env.PORT || 5000
@@ -13,6 +14,10 @@ app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.p9ooz.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+function verifyToken(req, res, next) {
+    console.log('hi');
+}
 
 async function run() {
     try {
@@ -74,8 +79,10 @@ async function run() {
         });
 
         //get my appointment by email 
-        app.get('/booking', async (req, res) => {
+        app.get('/booking', verifyToken, async (req, res) => {
             const patientEmail = req.query.patientEmail;
+            const authorization = req.headers.authorization;
+            console.log('auth headers', authorization);
             const query = { patientEmail: patientEmail };
             const booking = await bookingCollection.find(query).toArray();
             res.send(booking);
@@ -92,7 +99,8 @@ async function run() {
                 $set: user
             };
             const result = await usersCollection.updateOne(filter, updateDoc, options);
-            res.send(result);
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.send({ result, token });
         });
 
 
