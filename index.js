@@ -119,6 +119,11 @@ async function run() {
             res.send({ result, token });
         });
 
+        //get all users api 
+        app.get('/users', async (req, res) => {
+            const users = await usersCollection.find().toArray();
+            res.send(users);
+        });
 
 
     }
