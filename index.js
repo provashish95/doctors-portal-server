@@ -19,6 +19,7 @@ async function run() {
         await client.connect();
         const serviceCollection = client.db('doctors_portal').collection('services');
         const bookingCollection = client.db('doctors_portal').collection('bookings');
+        const usersCollection = client.db('doctors_portal').collection('users');
 
         app.get('/service', async (req, res) => {
             const query = {}
@@ -32,6 +33,7 @@ async function run() {
          * app.get('/booking/:id) get a specific booking 
          * app.post('/booking) add a new booking
          * app.patch('/booking/:id)  update a specific booking
+         * app.put('/booking/:id)   (upsert==> update/insert)  if exist than update if not exist than create /add
          * app.delete('/booking/:id)  delete a specific booking
          *   
         */
@@ -77,6 +79,20 @@ async function run() {
             const query = { patientEmail: patientEmail };
             const booking = await bookingCollection.find(query).toArray();
             res.send(booking);
+        });
+
+        //for google login use here put method
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+
+            const updateDoc = {
+                $set: user
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
         });
 
 
