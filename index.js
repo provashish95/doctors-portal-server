@@ -36,10 +36,23 @@ async function run() {
         const serviceCollection = client.db('doctors_portal').collection('services');
         const bookingCollection = client.db('doctors_portal').collection('bookings');
         const usersCollection = client.db('doctors_portal').collection('users');
+        const doctorsCollection = client.db('doctors_portal').collection('doctors');
 
+        //verify admin 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await usersCollection.findOne({ email: requester });
+            if (requesterAccount.role === 'admin') {
+                next();
+            } else {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+        }
+
+        //get services with only one name field by project
         app.get('/service', async (req, res) => {
             const query = {}
-            const cursor = serviceCollection.find(query);
+            const cursor = serviceCollection.find(query).project({ name: 1 });
             const services = await cursor.toArray();
             res.send(services)
         });
@@ -65,6 +78,7 @@ async function run() {
                 return res.send({ success: true, message: 'Booking complete' });
             }
         });
+
 
         app.get('/available', async (req, res) => {
             const date = req.query.date || 'May 16, 2022';
@@ -126,22 +140,14 @@ async function run() {
         });
 
         //make admin from users
-        app.put('/user/admin/:email', verifyToken, async (req, res) => {
+        app.put('/user/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
-
-            const requester = req.decoded.email;
-            const requesterAccount = await usersCollection.findOne({ email: requester });
-
-            if (requesterAccount.role === 'admin') {
-                const updateDoc = {
-                    $set: { role: 'admin' }
-                };
-                const result = await usersCollection.updateOne(filter, updateDoc);
-                res.send(result);
-            } else {
-                return res.status(403).send({ message: 'Forbidden' })
-            }
+            const updateDoc = {
+                $set: { role: 'admin' }
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
         });
 
         //find user by email and check isAdmin is or not 
@@ -150,6 +156,14 @@ async function run() {
             const user = await usersCollection.findOne({ email: email });
             const isAdmin = user?.role === 'admin';
             res.send({ admin: isAdmin });
+        });
+
+
+        //add doctor api 
+        app.post('/doctor', verifyToken, verifyAdmin, async (req, res) => {
+            const doctor = req.body;
+            const result = await doctorsCollection.insertOne(doctor);
+            res.send(result);
         });
 
 
