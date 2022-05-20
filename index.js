@@ -172,6 +172,14 @@ async function run() {
             res.send(doctors);
         });
 
+        //delete doctor by their email from url api 
+        app.delete('/doctor/:email', verifyToken, verifyAdmin, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const result = await doctorsCollection.deleteOne(filter);
+            res.send(result);
+        });
+
 
     }
     finally {
