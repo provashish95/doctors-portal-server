@@ -38,6 +38,7 @@ async function run() {
         const bookingCollection = client.db('doctors_portal').collection('bookings');
         const usersCollection = client.db('doctors_portal').collection('users');
         const doctorsCollection = client.db('doctors_portal').collection('doctors');
+        const paymentsCollection = client.db('doctors_portal').collection('payments');
 
         //verify admin 
         const verifyAdmin = async (req, res, next) => {
@@ -61,6 +62,22 @@ async function run() {
                 payment_method_types: ['card']
             });
             res.send({ clientSecret: paymentIntent.client_secret })
+        });
+
+        //update data for payment by id 
+        app.patch('/booking/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const result = await paymentsCollection.insertOne(payment);
+            const updatedBooking = await bookingCollection.updateOne(filter, updateDoc);
+            res.send(updateDoc);
         });
 
 
