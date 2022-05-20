@@ -1,9 +1,10 @@
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+require('dotenv').config()
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const app = express()
-require('dotenv').config()
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000
 
 
@@ -48,6 +49,20 @@ async function run() {
                 return res.status(403).send({ message: 'Forbidden access' })
             }
         }
+
+        //payment post api 
+        app.post('/create-payment-intent', verifyToken, async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        });
+
 
         //get services with only one name field by project
         app.get('/service', async (req, res) => {
@@ -117,6 +132,15 @@ async function run() {
             }
 
         });
+
+        //get booking info by id 
+        app.get('/booking/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            result = await bookingCollection.findOne(query);
+            res.send(result);
+        });
+
 
         //for google login use here put method
         app.put('/user/:email', async (req, res) => {
